@@ -9,3 +9,5 @@ const config = {
     '/mernproject'
     }
     export default config
+
+    

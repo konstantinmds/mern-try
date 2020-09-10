@@ -21,9 +21,6 @@ const styles = theme => ({
     }
 })
 
-Home.propTypes = {
-    classes: PropTypes.object.isRequired
-    }
 
 class Home extends Component {
     render() {
@@ -38,7 +35,7 @@ class Home extends Component {
                     title="Unicorn Shells"/>
                     <CardContent>
                         <Typography type="body1" component="p">
-                            Welcome to Mern Skeleton home page
+                            Welcome to Mern Skeleton home page 1
                         </Typography>
                     </CardContent>
                 </Card>
@@ -46,5 +43,8 @@ class Home extends Component {
         )
     }
 }
+    Home.propTypes = {
+        classes: PropTypes.object.isRequired
+        }
 
 export default withStyles(styles)(Home)
