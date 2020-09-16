@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import {Route, Switch} from 'react-router-dom'
 import Home from './core/Home'
-import {Users} from './user/Users'
+import Users from './user/Users'
 
 class MainRouter extends Component {
     render() {

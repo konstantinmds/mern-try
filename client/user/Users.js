@@ -1,17 +1,19 @@
 import React, { Component } from 'react';
 import { list } from './api-user';
 import { Paper, IconButton } from 'material-ui';
-import Typography from 'material-ui/styles/typography';
+import { Typography } from 'material-ui';
 import { ListItemAvatar } from 'material-ui';
 import { ListItemText } from 'material-ui';
 import { ListItemSecondaryAction } from 'material-ui';
 import { ArrowForward } from 'material-ui-icons';
 
 class Users extends Component {
-    state = { users: [] }
+    constructor(props){
+    super(props)
+    this.state = { users: [] }
+    }
 
-
-    componentDidMount = () => {
+    componentDidMount() {
         list().then((data) => {
             if(data.error) 
                 console.log(data.error);
