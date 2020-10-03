@@ -10,6 +10,7 @@ import { makeStyles } from '@material-ui/core/styles'
 import auth from './../auth/auth-helper'
 import {read, update} from './api-user.js'
 import {Redirect} from 'react-router-dom'
+import _default from '@material-ui/icons/AddPhotoAlternate'
 
 const useStyles = makeStyles(theme => ({
   card: {
@@ -90,8 +91,12 @@ export default function EditProfile({ match }) {
       }
     })
   }
+
   const handleChange = name => event => {
-    setValues({...values, [name]: event.target.value})
+    const value = name === 'photo' 
+    ? event.target.files[0]
+    : event.target.value
+    setValues({...values, [name]: value})
   }
 
     if (values.redirectToProfile) {
@@ -107,7 +112,7 @@ export default function EditProfile({ match }) {
           <label htmlFor="icon-button-file">
           <Button variant="contained" color="default" component="span"> 
           Upload
-          <FileUpload />
+          <_default />
           </Button>
           </label>
           <span className={classes.fileName}>

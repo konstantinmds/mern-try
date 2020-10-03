@@ -1,5 +1,7 @@
 import User from '../models/user.model'
 import extend from 'lodash/extend'
+import formidable from 'formidable'
+import fs from 'fs'
 import errorHandler from './../helpers/dbErrorHandler'
 
 const create = async (req, res) => {
@@ -22,6 +24,8 @@ const create = async (req, res) => {
 const userByID = async (req, res, next, id) => {
   try {
     let user = await User.findById(id)
+    .populate('followers', '_id name')
+    .populate('following', '_id name')
     if (!user)
       return res.status('400').json({
         error: "User not found"
@@ -34,6 +38,62 @@ const userByID = async (req, res, next, id) => {
     })
   }
 }
+
+const addFollowing = (req, res, next) => {
+    User.findById(req.body.userId, {$push: {following: req.body.followId}}, (err, result) => {
+      if (err) {
+        return res.status(400).json({
+          error: errorHandler.getErrorMessage(err)
+        })
+      }
+      next()
+    })
+}
+
+const addFollower = (req, res) => {
+  User.findByIdAndUpdate(req.body.followId,{$push: {followers: req.body.userId}}, {new: true})
+  .populate('following', '_id name')
+  .populate('followers', '_id name')
+  .exec((err, result) => {
+    if (err) {
+      return res.status(400).json({
+        error: errorHandler.getErrorMessage(err)
+      })
+    }
+    result.hashed_password = undefined
+    result.salt = undefined
+    res.json(result)
+  })
+
+}
+
+const removeFollowing = (req, res, next) => {
+  User.findByIdAndUpdate(req.body.userId, {$pull: {following: req.body.unfollowId}}, (err, result) => {
+  if (err) {
+  return res.status(400).json({
+  error: errorHandler.getErrorMessage(err)
+  })
+  }
+  next()
+  })
+ }
+
+ const removeFollower = (req, res) => {
+  User.findByIdAndUpdate(req.body.unfollowId, {$pull: {followers: req.body.userId}}, {new: true})
+  .populate('following', '_id name')
+  .populate('followers', '_id name')
+  .exec((err, result) => {
+  if (err) {
+  return res.status(400).json({
+  error: errorHandler.getErrorMessage(err)
+  })
+  }
+  result.hashed_password = undefined
+  result.salt = undefined
+  res.json(result)
+  })
+ }
+
 
 const read = (req, res) => {
   req.profile.hashed_password = undefined
@@ -52,20 +112,33 @@ const list = async (req, res) => {
   }
 }
 
-const update = async (req, res) => {
-  try {
+const update = async (req, res, next) => {
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        return res.status(400).json({
+          error: "Photo could not be uploaded"
+        });
+      }
     let user = req.profile
-    user = extend(user, req.body)
+    user = extend(user, fields)
     user.updated = Date.now()
+    if(files.photo){
+      user.photo.data = fs.readFileSync(files.photo.path)
+      user.photo.contentType = files.photo.type
+    }
+    try {   
     await user.save()
     user.hashed_password = undefined
     user.salt = undefined
     res.json(user)
-  } catch (err) {
+    } catch (err) {
     return res.status(400).json({
       error: errorHandler.getErrorMessage(err)
     })
-  }
+   }
+  })
 }
 
 const remove = async (req, res) => {
@@ -82,11 +155,33 @@ const remove = async (req, res) => {
   }
 }
 
+
+const photo = (req, res, next) => {
+  if(req.profile.photo.data) {
+    res.set("Content-Type", req.profile.photo.contentType)
+    return res.send(req.profile.photo.data)
+  }
+  next()
+}
+
+import profileImage from './../../client/assets/images/profile-pic.png' 
+import { result } from 'lodash'
+const defaultPhoto = (req, res) => {
+    return res.sendFile(process.cwd() + profileImage)
+}
+
+
 export default {
   create,
   userByID,
   read,
   list,
   remove,
-  update
+  update,
+  photo,
+  defaultPhoto,
+  removeFollower,
+  removeFollowing,
+  addFollowing,
+  addFollower
 }

@@ -16,6 +16,7 @@ import DeleteUser from './DeleteUser'
 import auth from './../auth/auth-helper'
 import {read} from './api-user.js'
 import {Redirect, Link} from 'react-router-dom'
+import FollowProfileButton from './FollowProfileButton'
 
 const useStyles = makeStyles(theme => ({
   root: theme.mixins.gutters({
@@ -32,9 +33,14 @@ const useStyles = makeStyles(theme => ({
 
 export default function Profile({ match }) {
   const classes = useStyles()
-  const [user, setUser] = useState({})
-  const [redirectToSignin, setRedirectToSignin] = useState(false)
-  const jwt = auth.isAuthenticated()
+  const [values, setValues] = useState({
+    user: {following:[], followers:[]},
+    redirectToSignin: false,
+    following: false
+ })
+
+const jwt = auth.isAuthenticated()
+const photoUrl = user._id ? `/api/users/photo/${user._id}?${new Date().getTime()}` : '/api/users/defaultphoto'
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -44,19 +50,39 @@ export default function Profile({ match }) {
       userId: match.params.userId
     }, {t: jwt.token}, signal).then((data) => {
       if (data && data.error) {
-        setRedirectToSignin(true)
+        setValues({...values, redirectToSignin: true})
       } else {
-        setUser(data)
+        setValues({...values, user: data, following: following})
       }
     })
-
-    return function cleanup(){
+      return function cleanup(){
       abortController.abort()
     }
 
   }, [match.params.userId])
+
   
-    if (redirectToSignin) {
+  checkFollow = (user) => {
+    const match = values.user.followers.find((follower) => {
+      return follower._id == jwt.user._id
+    })
+    return match
+  }
+
+  clickFollowButton = (callApi) => {
+    callApi({
+      userId: jwt.user._id
+    }, {t: jwt.token}, values.user._id).then((data) => {
+      if (data.error) {
+        setValues({...values, error: data.error})
+      } else {
+        setValues({...values, user: data, following: !values.following})
+      }
+    })
+  }
+
+
+    if (values.redirectToSignin) {
       return <Redirect to='/signin'/>
     }
     return (
@@ -67,13 +93,14 @@ export default function Profile({ match }) {
         <List dense>
           <ListItem>
             <ListItemAvatar>
-              <Avatar>
+              <Avatar src={photoUrl}>
                 <Person/>
               </Avatar>
             </ListItemAvatar>
-            <ListItemText primary={user.name} secondary={user.email}/> {
-             auth.isAuthenticated().user && auth.isAuthenticated().user._id == user._id &&
-              (<ListItemSecondaryAction>
+            <ListItemText primary={user.name} secondary={user.email}/> 
+            {
+             auth.isAuthenticated().user && auth.isAuthenticated().user._id == user._id 
+             ? (<ListItemSecondaryAction>
                 <Link to={"/user/edit/" + user._id}>
                   <IconButton aria-label="Edit" color="primary">
                     <Edit/>
@@ -81,6 +108,7 @@ export default function Profile({ match }) {
                 </Link>
                 <DeleteUser userId={user._id}/>
               </ListItemSecondaryAction>)
+            : (<FollowProfileButton following={values.following} onButtonClick={clickFollowButton}/>)
             }
           </ListItem>
           <Divider/>
