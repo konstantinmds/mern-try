@@ -40,7 +40,7 @@ export default function Profile({ match }) {
  })
 
 const jwt = auth.isAuthenticated()
-const photoUrl = user._id ? `/api/users/photo/${user._id}?${new Date().getTime()}` : '/api/users/defaultphoto'
+const photoUrl = jwt.user._id ? `/api/users/photo/${jwt.user._id}?${new Date().getTime()}` : '/api/users/defaultphoto'
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -52,6 +52,7 @@ const photoUrl = user._id ? `/api/users/photo/${user._id}?${new Date().getTime()
       if (data && data.error) {
         setValues({...values, redirectToSignin: true})
       } else {
+        let following = checkFollow(data)
         setValues({...values, user: data, following: following})
       }
     })
@@ -62,17 +63,17 @@ const photoUrl = user._id ? `/api/users/photo/${user._id}?${new Date().getTime()
   }, [match.params.userId])
 
   
-  checkFollow = (user) => {
-    const match = values.user.followers.find((follower) => {
+  const checkFollow = (user) => {
+    const match = user.followers.find((follower) => {
       return follower._id == jwt.user._id
     })
     return match
   }
 
-  clickFollowButton = (callApi) => {
+  const clickFollowButton = (callApi) => {
     callApi({
       userId: jwt.user._id
-    }, {t: jwt.token}, values.user._id).then((data) => {
+    }, {t: jwt.token}).then((data) => {
       if (data.error) {
         setValues({...values, error: data.error})
       } else {
@@ -97,27 +98,27 @@ const photoUrl = user._id ? `/api/users/photo/${user._id}?${new Date().getTime()
                 <Person/>
               </Avatar>
             </ListItemAvatar>
-            <ListItemText primary={user.name} secondary={user.email}/> 
+            <ListItemText primary={jwt.user.name} secondary={jwt.user.email}/> 
             {
-             auth.isAuthenticated().user && auth.isAuthenticated().user._id == user._id 
+             auth.isAuthenticated().user && auth.isAuthenticated().user._id == values.user._id 
              ? (<ListItemSecondaryAction>
-                <Link to={"/user/edit/" + user._id}>
+                <Link to={"/user/edit/" + jwt.user._id}>
                   <IconButton aria-label="Edit" color="primary">
                     <Edit/>
                   </IconButton>
                 </Link>
-                <DeleteUser userId={user._id}/>
+                <DeleteUser userId={jwt.user._id}/>
               </ListItemSecondaryAction>)
             : (<FollowProfileButton following={values.following} onButtonClick={clickFollowButton}/>)
             }
           </ListItem>
           <Divider/>
           <ListItem>
-          <ListItemText primary={user.about}/>
+          <ListItemText primary={jwt.user.about}/>
           </ListItem>
           <ListItem>
                       <ListItemText primary={"Joined: " + (
-              new Date(user.created)).toDateString()}/>
+              new Date(values.user.created)).toDateString()}/>
           </ListItem>
         </List>
       </Paper>
