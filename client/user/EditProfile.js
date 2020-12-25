@@ -62,7 +62,7 @@ export default function EditProfile({ match }) {
       if (data && data.error) {
         setValues({...values, error: data.error})
       } else {
-        setValues({...values, name: values.name, about: values.about, email: values.email})
+        setValues({...values, id: data._id, name: data.name, about: data.about, email: data.email, })
       }
     })
     return function cleanup(){
